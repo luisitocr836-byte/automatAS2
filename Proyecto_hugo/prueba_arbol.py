@@ -11,3 +11,4 @@ print("Postorden:", arb.recorrido_postorden())
 #lalo te toca hacer todo el proyeto
 # ora que proyecto ?
 # El de papi jacobo, mañana tenemos que llegar con una pizza
+# vavavavavvaavava mita y mita
