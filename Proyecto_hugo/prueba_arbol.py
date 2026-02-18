@@ -12,3 +12,4 @@ print("Postorden:", arb.recorrido_postorden())
 # ora que proyecto ?
 # El de papi jacobo, mañana tenemos que llegar con una pizza
 # vavavavavvaavava mita y mita
+# vamos por ella o la pedimos a domicilio, ya que el profe no se aguita que lleguemos con comida, le damos dos y ya
