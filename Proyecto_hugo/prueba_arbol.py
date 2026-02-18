@@ -16,3 +16,4 @@ print("Postorden:", arb.recorrido_postorden())
 #pues es que, no creo que nos de tiempo a ir por la pizza, mejor la pedimos a domicilio, y ya que el profe no se aguita, le damos dos rebanadas y ya
 # orale va, mañana pedimos la pizza  ademas mañana no voy a dejar a lore y mañana si nos fumamos un cigarro
 #pues ya compramos la cajetilla no? digo ya que estamos ahi bien, pero si nos va a salir mas cara, changos
+# pero vamos a voler a fumar como locomotoras, es mucho, solo quiero uno para el antojo
