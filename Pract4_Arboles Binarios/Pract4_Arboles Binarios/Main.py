@@ -10,6 +10,7 @@ from Libreria.edNoLineales.ArbolBB import ArbolBB
 #saca el pornooooooooooooooooooooooooooo
 #creo que esto ya quedo
 #quieres cafe??
+#pero ya no me vas a regañar??
 
 
 
