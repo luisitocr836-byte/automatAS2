@@ -6,6 +6,8 @@
 #Hugo Francisco Martinez Briseño
 
 from Libreria.edNoLineales.ArbolBB import ArbolBB
+#deja que los perros ladren huachimingo es señal de que avanzamos
+
 
 #--------------------- MENU ---------------------#
 def menu(op):
@@ -21,6 +23,7 @@ def menu(op):
 		op = int(input("\n      Elige una opción -> "))
 		if op < 1 or op > 7: 
 			print("\n\n      ¡¡¡ERROR!!!, la opción debe ser del 1 al 7\n") 
+   
 	return op 
 
 #--------------------- MAIN ---------------------#
