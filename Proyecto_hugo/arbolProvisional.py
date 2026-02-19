@@ -257,6 +257,19 @@ class TreeApp(tk.Tk):
         if self.root_node is None:
             messagebox.showinfo("Inorden", "Árbol vacío.")
             return
+        # If the tree is an ArbolBB, reuse its inorden implementation
+        if isinstance(self.root_node, ArbolBB):
+            # reset the accumulator and run the class traversal
+            try:
+                self.root_node.listABB = ""
+            except Exception:
+                # ensure attribute exists
+                self.root_node.listABB = ""
+            self.root_node.inorden(self.root_node)
+            # show the accumulated traversal
+            messagebox.showinfo("Inorden", self.root_node.listABB.strip())
+            return
+        # Fallback for other node types (ExprNode)
         res=[]
         def inorder(n):
             if n is None: return
