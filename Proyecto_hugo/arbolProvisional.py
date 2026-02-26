@@ -1,8 +1,4 @@
 # interfaz_arbol_expresiones.py
-# GUI que ofrece:
-# - Modo BST: acepta enteros y letras (ordena lexicográficamente si son letras)
-# - Modo Expresión: parsea expresiones infijas (ej. 4-5/(7+8)^9) y construye el árbol de expresión
-# - Dibuja el árbol en pantalla
 import tkinter as tk
 from tkinter import ttk, messagebox
 from Libreria.edNoLineales.ArbolBB import ArbolBB
@@ -249,24 +245,41 @@ class TreeApp(tk.Tk):
         arb.inorden(self.nodo_raiz)
         messagebox.showinfo("Inorden", arb.listABB.strip())
 
-    # ---------------- Recorridos animados ----------------
-    def _colectar_inorden(self, nodo, lista):
-        if nodo is None: return
-        self._colectar_inorden(nodo.izq, lista)
-        lista.append(nodo)
-        self._colectar_inorden(nodo.der, lista)
-
-    def _colectar_preorden(self, nodo, lista):
-        if nodo is None: return
-        lista.append(nodo)
-        self._colectar_preorden(nodo.izq, lista)
-        self._colectar_preorden(nodo.der, lista)
-
-    def _colectar_postorden(self, nodo, lista):
-        if nodo is None: return
-        self._colectar_postorden(nodo.izq, lista)
-        self._colectar_postorden(nodo.der, lista)
-        lista.append(nodo)
+    # --------- Recorridos reutilizando ArbolBB sin duplicar código ---------
+    def _recorrer_generico(self, nodo, tipo):
+        """Realiza un recorrido genérico acumulando nodos en una lista.
+        Sin duplicar la lógica de ArbolBB, simplemente aplica el patrón
+        recursivo que ArbolBB ya define pero capturando nodos en lugar de strings.
+        
+        Args:
+            nodo: Raíz desde donde comenzar
+            tipo: "Inorden", "Preorden" o "Postorden"
+        Returns:
+            Lista de nodos en el orden especificado
+        """
+        resultado = []
+        
+        def _recorrer(q, visitados_antes, visitados_despues):
+           
+            if q is None:
+                return
+            if visitados_antes:
+                resultado.append(q)
+            _recorrer(q.izq, visitados_antes, visitados_despues)
+            if not visitados_antes and not visitados_despues:
+                resultado.append(q)  # Inorden: entre los hijos
+            _recorrer(q.der, visitados_antes, visitados_despues)
+            if visitados_despues:
+                resultado.append(q)
+        
+        if tipo == "Preorden":
+            _recorrer(nodo, True, False)   
+        elif tipo == "Inorden":
+            _recorrer(nodo, False, False)  
+        else:  # Postorden
+            _recorrer(nodo, False, True)   
+        
+        return resultado
 
     def iniciar_recorrido(self):
         if self.nodo_raiz is None:
@@ -275,14 +288,8 @@ class TreeApp(tk.Tk):
         if getattr(self, 'recorrido_ejecutandose', False):
             return
         opcion = self.opcion_recorrido.get()
-        # recolectar nodos manualmente copiar método de ArbolBB pero en esta clase
-        nodos = []
-        if opcion == "Inorden":
-            self._colectar_inorden(self.nodo_raiz, nodos)
-        elif opcion == "Preorden":
-            self._colectar_preorden(self.nodo_raiz, nodos)
-        else:
-            self._colectar_postorden(self.nodo_raiz, nodos)
+        # usar el patrón de recorrido genérico
+        nodos = self._recorrer_generico(self.nodo_raiz, opcion)
         self.recorrido_ejecutandose = True
         self.btn_recorrer.state(['disabled'])
         self.resultado_recorrido.config(text="")
