@@ -2,10 +2,10 @@
 
 ## Descripción General
 `arbolProvisional.py` es una aplicación gráfica basada en **Tkinter** que permite:
-- Insertar valores en un **Árbol Binario de Búsqueda (BST)** con números o letras
 - Parsear **expresiones matemáticas infijas** (ej. `4-5/(7+8)^9`) y convertirlas en árboles de expresión
 - Visualizar el árbol de forma gráfica en un canvas
 - Realizar y animar **tres tipos de recorridos**: Inorden, Preorden, Postorden
+- Integración elegante con **ArbolBB** para los recorridos sin duplicar código
 
 ---
 
@@ -21,6 +21,38 @@ Representa un **nodo genérico** compatible con `ArbolBB` para árboles de expre
 
 #### Métodos:
 - `__init__(self, info, izq=None, der=None)`: Inicializa un nodo con un valor y referencias opcionales a hijos
+
+---
+
+### Clase `ArbolConAnimacion(ArbolBB)`
+Extiende **ArbolBB** para capturar nodos durante el recorrido mientras mantiene la comportamiento original.
+
+#### Propósito:
+- Hereda los métodos `preorden()`, `inorden()`, `postorden()` de ArbolBB
+- Sobrescribe estos métodos para **capturar nodos en una lista** además de concatenar strings
+- Permite que arbolProvisional obtenga los nodos para la animación sin duplicar la lógica del recorrido
+
+#### Métodos:
+- `preorden(self, Q, nodos=None)`: Recorrido preorden que retorna lista de nodos
+- `inorden(self, Q, nodos=None)`: Recorrido inorden que retorna lista de nodos
+- `postorden(self, Q, nodos=None)`: Recorrido postorden que retorna lista de nodos
+
+#### Ventaja:
+```python
+def postorden(self, Q, nodos=None):
+    if nodos is None:
+        nodos = []
+    if Q is not None:
+        self.postorden(Q.izq, nodos)      # Algoritmo original
+        self.postorden(Q.der, nodos)      # (sin modificar ArbolBB.py)
+        nodos.append(Q)                   # ✓ CAPTURA para animación
+        self.listABB += " " + str(Q.info) # ✓ Mantiene funcionamiento original
+    return nodos
+```
+
+**Resultado**: Una sola pasada por el árbol que hace DOS cosas:
+1. ArbolBB **recorre** (concatena strings)
+2. arbolProvisional **anima** (usando nodos capturados)
 
 ---
 
@@ -49,7 +81,7 @@ Aplicación principal que hereda de `Tkinter.Tk` y gestiona toda la interfaz gr�
 **Propósito**: Inicializa la ventana principal y llama a la construcción de la interfaz.
 
 **Qué hace**:
-1. Configura el título de la ventana a "Árbol: BST y Expresiones"
+1. Configura el título de la ventana a "Árbol de Expresiones"
 2. Establece el tamaño a 1000x650 píxeles
 3. Inicializa `nodo_raiz` a `None` (árbol vacío)
 4. Llama a `_build_ui()` para construir la interfaz
@@ -63,12 +95,10 @@ Aplicación principal que hereda de `Tkinter.Tk` y gestiona toda la interfaz gr�
 **Qué hace**:
 1. **Barra superior**: Crea un frame con:
    - Etiqueta "Entrada:"
-   - Campo de texto (`entry`) para escribir valores o expresiones
-   - Botón "Insertar (BST)" → llama a `insertar_bst()`
+   - Campo de texto (`entry`) para escribir expresiones matemáticas
    - Botón "Usar Expresión" → llama a `usar_expresion()`
    - Botón "Limpiar" → llama a `limpiar()`
    - Botón "Redibujar" → llama a `redibujar()`
-   - Botón "Mostrar Inorden" → llama a `mostrar_inorden()`
    - ComboBox para seleccionar recorrido (Inorden/Preorden/Postorden)
    - Botón "Recorrer" → llama a `iniciar_recorrido()`
    - Etiqueta y Label para mostrar el recorrido actual
@@ -78,26 +108,6 @@ Aplicación principal que hereda de `Tkinter.Tk` y gestiona toda la interfaz gr�
 3. **Canvas principal**: Área blanca donde se dibuja el árbol
 
 4. **Barra de estado**: Label inferior que muestra información (árbol vacío, número de nodos, etc.)
-
----
-
-### `insertar_bst(self)`
-**Propósito**: Inserta un valor en el árbol binario de búsqueda.
-
-**Qué hace**:
-1. Obtiene el texto del campo `entry`
-2. Si está vacío, muestra advertencia
-3. Crea una instancia de `ArbolBB` como contenedor
-4. Inicializa la cabecera del árbol con `crea_cab()`
-5. Asigna el árbol actual a la cabecera (`arb.P.izq = self.nodo_raiz`)
-6. Determina si convertir la entrada a `int` o mantenerla como `str`
-7. **Truco importante**: Reemplaza temporalmente la función `input()` de Python para que devuelva el texto de la caja de entrada
-8. Llama al método `insertar(tipo)` de `ArbolBB` (que internamente usa la función `input` parcheada)
-9. Restaura la función `input()` original
-10. Actualiza `self.nodo_raiz` con el árbol resultante
-11. Limpia el campo de entrada y redibuja el árbol
-
-**Reutilización**: Usa directamente el código de `ArbolBB.insertar()` sin modificar ese archivo.
 
 ---
 
@@ -246,45 +256,45 @@ Aplicación principal que hereda de `Tkinter.Tk` y gestiona toda la interfaz gr�
 
 **Qué hace**:
 1. Verifica si el árbol está vacío
-2. Crea una instancia temporal de `ArbolBB`
-3. Reinicia el acumulador `arb.listABB = ""`
-4. Ejecuta el método `inorden()` de `ArbolBB` sobre el nodo raíz
-5. Muestra el resultado en un diálogo MessageBox
+2. Obtiene los nodos en orden inorden usando `_obtener_nodos_recorrido()`
+3. Convierte los valores de los nodos a strings
+4. Muestra el resultado en un diálogo MessageBox
 
-**Reutilización**: Usa directamente el método `inorden()` de la clase `ArbolBB` sin modificación.
-
----
-
-### `_colectar_inorden(self, nodo, lista)`
-**Propósito**: Recorre el árbol en inorden acumulando los nodos (no strings) en una lista.
-
-**Qué hace**:
-1. Recursivamente en orden **inorden**:
-   - Izq → Nodo → Der
-2. En lugar de concatenar strings, **agrega el nodo mismo** a la lista
-3. Esta lista se usa luego para la animación del recorrido
+**Reutilización**: Si el árbol es ArbolBB, usa ArbolConAnimacion; si es ExprNode, usa _recorrer_generico()
 
 ---
 
-### `_colectar_preorden(self, nodo, lista)`
-**Propósito**: Recorre el árbol en preorden acumulando los nodos en una lista.
+### `_obtener_nodos_recorrido(self, nodo, tipo)`
+**Propósito**: Obtiene lista de nodos usando la estrategia correcta según el tipo de árbol.
 
 **Qué hace**:
-1. Recursivamente en orden **preorden**:
-   - Nodo → Izq → Der
-2. Agrega el nodo a la lista
-3. Se usa para la animación del recorrido preorden
+1. **Detecta el tipo de árbol**:
+   - Si es `ArbolBB` → crea una instancia de `ArbolConAnimacion` y llama su método de recorrido
+   - Si es `ExprNode` → usa `_recorrer_generico()`
+
+2. **Retorna**: Lista de nodos en el orden especificado (Inorden, Preorden o Postorden)
+
+**Ventaja**: El código es agnóstico y flexible - funciona con cualquier tipo de árbol
 
 ---
 
-### `_colectar_postorden(self, nodo, lista)`
-**Propósito**: Recorre el árbol en postorden acumulando los nodos en una lista.
+### `_recorrer_generico(self, nodo, tipo)`
+**Propósito**: Realiza un recorrido genérico para ExprNode sin duplicar lógica.
 
 **Qué hace**:
-1. Recursivamente en orden **postorden**:
-   - Izq → Der → Nodo
-2. Agrega el nodo a la lista
-3. Se usa para la animación del recorrido postorden
+1. Define una función interna `_recorrer()` que acepta parámetros booleanos:
+   - `visitados_antes`: Si True, agrega el nodo antes de recorrer hijos (Preorden)
+   - `visitados_despues`: Si True, agrega el nodo después de recorrer hijos (Postorden)
+   - Si ambos False, agrega el nodo entre hijos (Inorden)
+
+2. **Según el tipo solicitado**:
+   - "Preorden": `_recorrer(nodo, True, False)`
+   - "Inorden": `_recorrer(nodo, False, False)`
+   - "Postorden": `_recorrer(nodo, False, True)`
+
+3. Retorna una lista de nodos en el orden especificado
+
+**Ventaja**: Un solo método implementa los tres tipos de recorrido sin código duplicado
 
 ---
 
@@ -295,10 +305,9 @@ Aplicación principal que hereda de `Tkinter.Tk` y gestiona toda la interfaz gr�
 1. Verifica si el árbol está vacío
 2. Verifica si ya hay una animación en progreso (evita múltiples animaciones simultáneas)
 3. Obtiene el tipo de recorrido seleccionado del ComboBox
-4. Colecta los nodos en el orden especificado:
-   - Si "Inorden": llama `_colectar_inorden()`
-   - Si "Preorden": llama `_colectar_preorden()`
-   - Si "Postorden": llama `_colectar_postorden()`
+4. Obtiene los nodos en el orden especificado usando `_obtener_nodos_recorrido()`:
+   - Si es ArbolBB → usa ArbolConAnimacion 
+   - Si es ExprNode → usa _recorrer_generico()
 5. Marca la bandera `recorrido_ejecutandose = True`
 6. Deshabilita el botón "Recorrer" para evitar múltiples ejecuciones
 7. Limpia los displays de recorrido
@@ -346,20 +355,14 @@ Aplicación principal que hereda de `Tkinter.Tk` y gestiona toda la interfaz gr�
 
 ## Flujo de uso típico
 
-1. **Insertar en BST**:
-   - Usuario escribe `5` en el campo entry
-   - Click en "Insertar (BST)"
-   - Se crea/actualiza el árbol binario de búsqueda
-   - El árbol se redibuja
-
-2. **Parsear expresión**:
-   - Usuario escribe `a+b*c`
+1. **Parsear expresión**:
+   - Usuario escribe `a+b*c` en el campo entry
    - Click en "Usar Expresión"
    - Se convierte a postfija: `a b c * +`
    - Se construye el árbol de expresión
-   - Se redibuja
+   - Se redibuja en el canvas
 
-3. **Animar recorrido**:
+2. **Animar recorrido**:
    - Usuario selecciona "Preorden" del ComboBox
    - Click en "Recorrer"
    - Cada 650ms se colorea un nodo rojo, se acumula y muestra
@@ -370,7 +373,7 @@ Aplicación principal que hereda de `Tkinter.Tk` y gestiona toda la interfaz gr�
 ## Dependencias externas
 
 - `tkinter`: GUI (stdlib)
-- `ArbolBB` de `Libreria.edNoLineales.ArbolBB`: Para la inserción en BST y recorridos
+- `ArbolBB` de `Libreria.edNoLineales.ArbolBB`: Para extender con ArbolConAnimacion (aunque no es estrictamente necesaria si solo usas ExprNode)
 
 ---
 

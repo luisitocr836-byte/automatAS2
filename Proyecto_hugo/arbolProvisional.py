@@ -1,21 +1,56 @@
-# interfaz_arbol_expresiones.py
+# arbol_expresiones.py
 import tkinter as tk
 from tkinter import ttk, messagebox
 from Libreria.edNoLineales.ArbolBB import ArbolBB
 
-# Nodo compatible con ArbolBB (usa atributos info, izq, der)
+
 class ExprNode:
     def __init__(self, info, izq=None, der=None):
         self.info = info
         self.izq = izq
         self.der = der
 
+class ArbolConAnimacion(ArbolBB):
+    
+    def preorden(self, Q, nodos=None):
+        """Recorrido preorden que captura nodos para animación."""
+        if nodos is None:
+            nodos = []
+        if Q is not None:
+            nodos.append(Q)
+            self.listABB += " " + str(Q.info)
+            self.preorden(Q.izq, nodos)
+            self.preorden(Q.der, nodos)
+        return nodos
+    
+    def inorden(self, Q, nodos=None):
+        """Recorrido inorden que captura nodos para animación."""
+        if nodos is None:
+            nodos = []
+        if Q is not None:
+            self.inorden(Q.izq, nodos)
+            nodos.append(Q)
+            self.listABB += " " + str(Q.info)
+            self.inorden(Q.der, nodos)
+        return nodos
+    
+    def postorden(self, Q, nodos=None):
+        """Recorrido postorden que captura nodos para animación."""
+        if nodos is None:
+            nodos = []
+        if Q is not None:
+            self.postorden(Q.izq, nodos)
+            self.postorden(Q.der, nodos)
+            nodos.append(Q)
+            self.listABB += " " + str(Q.info)
+        return nodos
+
 class TreeApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Árbol: BST y Expresiones")
+        self.title("Árbol de Expresiones")
         self.geometry("1000x650")
-        # usamos self.nodo_raiz como la raíz actual; puede ser un nodo ArbolBB o ExprNode
+        # raíz actual del árbol de expresiones
         self.nodo_raiz = None
         self._build_ui()
         self.x_gap = 70
@@ -28,11 +63,9 @@ class TreeApp(tk.Tk):
         ttk.Label(top, text="Entrada:").pack(side="left")
         self.entry = ttk.Entry(top, width=30)
         self.entry.pack(side="left", padx=4)
-        ttk.Button(top, text="Insertar (BST)", command=self.insertar_bst).pack(side="left", padx=3)
         ttk.Button(top, text="Usar Expresión", command=self.usar_expresion).pack(side="left", padx=3)
         ttk.Button(top, text="Limpiar", command=self.limpiar).pack(side="left", padx=3)
         ttk.Button(top, text="Redibujar", command=self.redibujar).pack(side="left", padx=3)
-        ttk.Button(top, text="Mostrar Inorden", command=self.mostrar_inorden).pack(side="left", padx=3)
         # Recorridos: selector y botón
         self.opcion_recorrido = ttk.Combobox(top, values=["Inorden", "Preorden", "Postorden"], state="readonly", width=12)
         self.opcion_recorrido.current(0)
@@ -57,43 +90,7 @@ class TreeApp(tk.Tk):
         self.status = ttk.Label(self, text="", anchor="w")
         self.status.pack(side="bottom", fill="x")
 
-    # ---------------- BST insertion (accepts numbers and letters) ----------------
-    def insertar_bst(self):
-        """Inserta un valor usando la lógica de ArbolBB sin modificar su archivo.
-
-        Aprovechamos el método `insertar` de la clase que solicita entrada mediante
-        `input()`. Para evitar interacción por consola reemplazamos temporalmente
-        la función builtin `input` por una que devuelve el texto de la caja.
-        Después actualizamos `self.nodo_raiz` con la raíz resultante del contenedor
-        `arb.P.izq`.
-        """
-        entrada = self.entry.get().strip()
-        if entrada == "":
-            messagebox.showwarning("Entrada", "Escribe un valor (número o letra).")
-            return
-        # creamos un contenedor ArbolBB que mantiene la cabecera en P
-        arb = ArbolBB(None, None, None)
-        arb.crea_cab()
-        arb.P.izq = self.nodo_raiz
-        # decidimos el tipo de conversión a pasar (int o str)
-        tipo = int
-        try:
-            tipo(entrada)
-        except Exception:
-            tipo = str
-        # parcheamos input para que devuelva la entrada deseada
-        old_input = __builtins__['input']
-        try:
-            __builtins__['input'] = lambda prompt='': entrada
-            arb.insertar(tipo)
-        finally:
-            __builtins__['input'] = old_input
-        # extraemos árbol actualizado
-        self.nodo_raiz = arb.P.izq
-        self.entry.delete(0, 'end')
-        self.redibujar()
-
-    # ---------------- Expression parsing & tree ----------------
+    # ---------  expresiones infijas ---------
     def usar_expresion(self):
         expresion = self.entry.get().strip()
         if expresion == "":
@@ -133,7 +130,7 @@ class TreeApp(tk.Tk):
             if c in "+-*/^()":
                 tokens.append(c); i+=1; continue
             raise ValueError(f"Caracter inválido: {c}")
-        # shunting-yard
+    
         prec = {'^':4, '*':3, '/':3, '+':2, '-':2}
         asoci_derecha = {'^'}
         salida=[]
@@ -183,7 +180,7 @@ class TreeApp(tk.Tk):
             raise ValueError("Expresión inválida")
         return pila[0]
 
-    # ---------------- Drawing ----------------
+    # ---------------- REDIBUJAR ----------------
     def redibujar(self):
         self.canvas.delete("all")
         self.node_items = {}
@@ -235,28 +232,40 @@ class TreeApp(tk.Tk):
             self.node_items[nodo] = (oval, text)
 
     def mostrar_inorden(self):
-        """Muestra el recorrido inorden usando el método de ArbolBB."""
+        """Muestra el recorrido inorden del árbol de expresión ."""
         if self.nodo_raiz is None:
             messagebox.showinfo("Inorden", "Árbol vacío.")
             return
-        arb = ArbolBB(None, None, None)
-        # reutilizamos inorden de ArbolBB para formar la cadena
-        arb.listABB = ""
-        arb.inorden(self.nodo_raiz)
-        messagebox.showinfo("Inorden", arb.listABB.strip())
+        nodos = self._obtener_nodos_recorrido(self.nodo_raiz, "Inorden")
+        res = [str(nodo.info) for nodo in nodos]
+        messagebox.showinfo("Inorden", " ".join(res))
 
-    # --------- Recorridos reutilizando ArbolBB sin duplicar código ---------
-    def _recorrer_generico(self, nodo, tipo):
-        """Realiza un recorrido genérico acumulando nodos en una lista.
-        Sin duplicar la lógica de ArbolBB, simplemente aplica el patrón
-        recursivo que ArbolBB ya define pero capturando nodos en lugar de strings.
-        
-        Args:
-            nodo: Raíz desde donde comenzar
-            tipo: "Inorden", "Preorden" o "Postorden"
-        Returns:
-            Lista de nodos en el orden especificado
+    # --------- Métodos de recorrido con ArbolBB y animación ---------
+    def _obtener_nodos_recorrido(self, nodo, tipo):
+        """Obtiene lista de nodos para animación.
+
+        Si el árbol es de tipo `ArbolBB`, lo convertimos a `ExprNode`
+        y usamos `_recorrer_generico()` para un único flujo de trabajo.
+        Si ya es `ExprNode`, se usa `_recorrer_generico()` directamente.
         """
+        if isinstance(nodo, ArbolBB):
+            nodo_expr = self._convertir_arbolbb_a_exprnode(nodo)
+            return self._recorrer_generico(nodo_expr, tipo)
+        return self._recorrer_generico(nodo, tipo)
+
+    def _convertir_arbolbb_a_exprnode(self, nodo_bb):
+        """Convierte recursivamente un nodo de `ArbolBB` a `ExprNode`.
+
+        Retorna `None` si `nodo_bb` es `None`.
+        """
+        if nodo_bb is None:
+            return None
+        nodo = ExprNode(nodo_bb.info)
+        nodo.izq = self._convertir_arbolbb_a_exprnode(getattr(nodo_bb, 'izq', None))
+        nodo.der = self._convertir_arbolbb_a_exprnode(getattr(nodo_bb, 'der', None))
+        return nodo
+    
+    def _recorrer_generico(self, nodo, tipo):
         resultado = []
         
         def _recorrer(q, visitados_antes, visitados_despues):
@@ -288,8 +297,7 @@ class TreeApp(tk.Tk):
         if getattr(self, 'recorrido_ejecutandose', False):
             return
         opcion = self.opcion_recorrido.get()
-        # usar el patrón de recorrido genérico
-        nodos = self._recorrer_generico(self.nodo_raiz, opcion)
+        nodos = self._obtener_nodos_recorrido(self.nodo_raiz, opcion)
         self.recorrido_ejecutandose = True
         self.btn_recorrer.state(['disabled'])
         self.resultado_recorrido.config(text="")
