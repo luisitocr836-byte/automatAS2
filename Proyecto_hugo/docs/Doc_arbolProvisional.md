@@ -8,11 +8,12 @@ Componentes principales
 - `TreeApp` (Tkinter): entrada, botones, canvas para dibujo.
 - `ExprNode`: nodo simple con `info`, `izq`, `der` compatible con `ArbolBB`.
 - Funciones clave:
-  - `insert_bst()`: inserta un nodo en un BST existente o crea uno nuevo.
-  - `use_expression()`: convierte infija→postfija y construye árbol de expresiones.
-  - `_infix_to_postfix()` y `_postfix_to_tree()`: parser básico (operadores ^,*,/,+,- y paréntesis).
-  - `redraw()`: calcula posiciones y dibuja nodos y aristas.
-  - `start_traversal()` y `_animate_traversal()`: recorre y destaca nodos.
+  - `insertar_bst()`: inserta un nodo en un BST existente o crea uno nuevo.
+  - `usar_expresion()`: convierte infija→postfija y construye árbol de expresiones.
+  - `_infija_a_postfija()` y `_postfija_a_arbol()`: parser básico (operadores ^,*,/,+,- y paréntesis).
+  - `redibujar()`: calcula posiciones y dibuja nodos y aristas.
+  - `mostrar_inorden()`: muestra recorrido usando los métodos de `ArbolBB`.
+  - `iniciar_recorrido()` y `_animar_recorrido()`: recorre y destaca nodos; la colección de nodos se realiza mediante los nuevos métodos `preorden_nodos`, `inorden_nodos` y `postorden_nodos` de `ArbolBB`.
 
 Uso rápido
 - Ejecutar el archivo: `python arbolProvisional.py` (ejecuta la ventana Tk).
